@@ -1,4 +1,4 @@
-# Kontena HAProxy
+# Krates HAProxy
 
 HAProxy image that does load-balancing between configured addresses. HAProxy reconfigures itself automatically when backend dns address change.
 
@@ -19,5 +19,7 @@ HAProxy image that does load-balancing between configured addresses. HAProxy rec
 
 
 ## License
+
+Krates is licensed under the MIT License. See [LICENSE](LICENSE.txt) for full license text.
 
 Kontena software is open source, and you can use it for any purpose, personal or commercial. Kontena is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for full license text.
