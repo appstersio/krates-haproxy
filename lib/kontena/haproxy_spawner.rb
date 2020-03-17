@@ -11,7 +11,7 @@ module Kontena
       @current_pid = nil
       @haproxy_cmd = [haproxy_bin, '-f', config_file, '-db']
       subscribe 'haproxy:config_updated', :update_haproxy
-      info '~~ Starting Kontena HAProxy ~~'
+      info '~~ Starting Krates HAProxy ~~'
     end
 
     def update_haproxy(*args)

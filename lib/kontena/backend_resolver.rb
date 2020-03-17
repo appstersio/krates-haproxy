@@ -41,6 +41,7 @@ module Kontena
       publish 'backends_resolved', resolved_backends
     rescue => exc
       error "Failed to resolve backends: #{exc.message}"
+      error "Failed to resolve backends: #{exc.backtrace.join("\n")}"
     end
 
     ##

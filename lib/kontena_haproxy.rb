@@ -1,6 +1,7 @@
 require 'celluloid'
 require 'celluloid/autostart'
 require 'celluloid/io'
+require 'pry' if ENV['PRY_SESSION'] == '1'
 
 require_relative 'kontena/backend_resolver'
 require_relative 'kontena/haproxy_config_generator'
