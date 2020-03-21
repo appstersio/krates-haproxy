@@ -19,7 +19,7 @@ build:
 # Runs HAProxy container in pry-session mode for debugging and troubleshooting purposes
 debug:
 	@docker run -d --rm -p 9292:4000 --name kontena-server-api staticpagesio/oxy:0.1.11
-	@docker run -it --rm -p 80:80 -p 443:443 --link kontena-server-api:kontena-server-api -e "LE_DOMAINS=$(LE_DOMAINS)" -e "LE_EMAIL=$(LE_EMAIL)" -e "PRY_SESSION=1" -v "$$(pwd):/app" krates/haproxy
+	@docker run -it --rm -p 80:80 -p 443:443 --link kontena-server-api:kontena-server-api -e "LE_DOMAINS=$(LE_DOMAINS)" -e "LE_EMAIL=$(LE_EMAIL)" -e "PRY_SESSION=1" -v "$$(pwd):/app" -v "$$(pwd)/tmp/ssl:/etc/ssl/private" -v "$$(pwd)/tmp/acme:/var/lib/acme" krates/haproxy
 # Configures and runs all prerequisites to validate HAProxy and LetsEncrypt
 run: wipe tunnel debug
 # Runs sslscan from toolbox to evaluate whether LetsEncrypt integration works as expected
