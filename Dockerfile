@@ -1,7 +1,7 @@
 FROM ruby:2.2-slim
 LABEL maintainer="Pavel Tsurbeleu <krates@appsters.io>"
 
-ENV BACKENDS=kontena-server-api:9292 ACMETOOL_VERSION=0.0.61 \
+ENV BACKENDS=kontena-server-api:9292 LEGO_VERSION=3.5.0 \
     BUNDLER_VERSION=1.17.3 \
     BUNDLE_JOBS=16
 
@@ -17,11 +17,9 @@ RUN apt-get update -y && apt-get install -y haproxy build-essential ca-certifica
     apt-get clean && \
     apt-get autoremove -y --purge
 
-RUN curl -sL -o /tmp/acmetool-v${ACMETOOL_VERSION}-linux_amd64.tar.gz https://github.com/hlandau/acme/releases/download/v${ACMETOOL_VERSION}/acmetool-v${ACMETOOL_VERSION}-linux_amd64.tar.gz && \
-    cd /tmp && tar zvxf acmetool-v${ACMETOOL_VERSION}-linux_amd64.tar.gz && \
-    mv /tmp/acmetool-v${ACMETOOL_VERSION}-linux_amd64/bin/acmetool /usr/bin/acmetool && \
-    mkdir -p /etc/acmetool && mkdir -p /var/lib/acme/conf && \
-    echo "provider: https://acme-v01.api.letsencrypt.org/directory" > /var/lib/acme/conf/target
+RUN curl -sL -o /tmp/lego_v${LEGO_VERSION}_linux_amd64.tar.gz https://github.com/go-acme/lego/releases/download/v${LEGO_VERSION}/lego_v${LEGO_VERSION}_linux_amd64.tar.gz && \
+    cd /tmp/ && tar zvxf lego_v${LEGO_VERSION}_linux_amd64.tar.gz && \
+    mv /tmp/lego /usr/bin/lego && rm -f /tmp/*
 
 ADD acmetool/response-file.yml /etc/acmetool/response-file.yml
 ADD . /app
