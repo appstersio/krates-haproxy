@@ -4,7 +4,7 @@ module Kontena
     include Celluloid::Logger
     include Celluloid::Notifications
 
-    attr_reader :email, :domains
+    attr_reader :email, :domains, :debug
 
     ACME_CMD = "lego"
     ACME_CERT_DIR = "/var/lib/acme/"
@@ -16,7 +16,7 @@ module Kontena
     # @param [Boolean] autostart
     def initialize(email, domains, debug = false, autostart = true)
       # Local copy of the incoming parameters
-      @domains, @email = domains, email
+      @domains, @email, @debug = domains, email, debug
       # Ensure logs folder exists before using it
       FileUtils.mkdir_p(ACME_LOGS_DIR) unless Dir.exist?(ACME_LOGS_DIR)
       # Switch to use staging endpoint to avoid hitting LE's prod rate limits
@@ -33,8 +33,12 @@ module Kontena
         }
         publish 'haproxy:config_updated'
         loop do
-          sleep (60*60*24*7) # week
-          reconcile_domains
+          sleep (60*60*24*7) unless debug # week
+          sleep (60*3) if debug # 3 minutes
+          domains.each{|d|
+            reconcile_domain(d)
+            copy_domain_cert(d)
+          }
           publish 'haproxy:config_updated'
         end
       }
@@ -78,8 +82,26 @@ module Kontena
     end
 
     # @return [Boolean]
-    def reconcile_domains
-      # system("#{ACME_CMD} reconcile")
+    def reconcile_domain(domain)
+      retries = 0
+      begin
+        # lego -m <email> -d <domain> --http --path /var/lib/acme --pem renew
+        success = system("#{ACME_CMD} -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem renew #{'--days 999' if debug} >> #{ACME_LOGS_DIR}/console.log")
+        if success
+          info "renewed cert for domain #{domain}"
+        else
+          retries += 1
+          raise "failed to renew cert for domain #{domain}"
+        end
+      rescue => exc
+        info exc.message
+        # In case of an exception, display acme logs as well
+        info File.read("#{ACME_LOGS_DIR}/console.log")
+        wait = 10 * retries
+        info "retrying in #{wait} seconds"
+        sleep wait
+        retry
+      end
     end
   end
 end
