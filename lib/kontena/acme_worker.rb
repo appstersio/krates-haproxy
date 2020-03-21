@@ -6,18 +6,22 @@ module Kontena
 
     attr_reader :email, :domains
 
-    ACME_RESPONSE = "/etc/acmetool/response-file.yml"
-    ACME_CMD = "acmetool --batch --response-file=#{ACME_RESPONSE}"
-    ACME_CERT_DIR = "/var/lib/acme/live/"
+    ACME_CMD = "lego"
+    ACME_CERT_DIR = "/var/lib/acme/"
+    ACME_LOGS_DIR = ACME_CERT_DIR + "logs"
 
     # @param [String] email
     # @param [Array<String>] domains
+    # @param [Boolean] debug
     # @param [Boolean] autostart
-    def initialize(email, domains, autostart = true)
-      @domains = domains
-      File.open(ACME_RESPONSE, 'a') do |f|
-        f.puts('"acme-enter-email": "%s"' % [email])
-      end
+    def initialize(email, domains, debug = false, autostart = true)
+      # Local copy of the incoming parameters
+      @domains, @email = domains, email
+      # Ensure logs folder exists before using it
+      FileUtils.mkdir_p(ACME_LOGS_DIR) unless Dir.exist?(ACME_LOGS_DIR)
+      # Switch to use staging endpoint to avoid hitting LE's prod rate limits
+      ACME_CMD << " -s https://acme-staging-v02.api.letsencrypt.org/directory" if debug
+      # Kick-start the main routine in case of auto-start
       async.start! if autostart
     end
 
@@ -41,7 +45,8 @@ module Kontena
     def want_domain(domain)
       retries = 0
       begin
-        success = system("#{ACME_CMD} want #{domain}")
+        # lego -a -m <email> -d <domain> --http --http.port 127.0.0.1:402 --path <state> run
+        success = system("#{ACME_CMD} -a -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem run >> #{ACME_LOGS_DIR}/console.log")
         if success
           info "fetched cert for domain #{domain}"
         else
@@ -50,6 +55,8 @@ module Kontena
         end
       rescue => exc
         info exc.message
+        # In case of an exception, display acme logs as well
+        info File.read("#{ACME_LOGS_DIR}/console.log")
         wait = 10 * retries
         info "retrying in #{wait} seconds"
         sleep wait
@@ -59,25 +66,20 @@ module Kontena
 
     # @param [String] domain
     def copy_domain_cert(domain)
-      dir = "#{ACME_CERT_DIR}/#{domain}/"
-      dest = "/etc/ssl/private/#{domain}.pem"
-      if File.exist?(File.join(dir, 'fullchain')) && File.exist?(File.join(dir, 'privkey'))
+      file_path = ACME_CERT_DIR + "certificates/#{domain}.pem"
+      ssl_path = "/etc/ssl/private/#{domain}.pem"
+      if File.exist?(file_path)
         info "copying #{domain} certificate"
-        cert = File.read(File.join(dir, 'fullchain'))
-        cert << "\n"
-        cert << File.read(File.join(dir, 'privkey'))
-        File.open(dest, 'w') do |f|
-          f.puts cert
-        end
-      elsif File.exist?(dest)
-        File.unlink(dest)
+        FileUtils.copy(file_path, ssl_path)
+      elsif File.exist?(ssl_path)
+        File.unlink(ssl_path)
         info "removing certificate from #{domain}"
       end
     end
 
     # @return [Boolean]
     def reconcile_domains
-      system("#{ACME_CMD} reconcile")
+      # system("#{ACME_CMD} reconcile")
     end
   end
 end
