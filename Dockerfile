@@ -33,4 +33,6 @@ EXPOSE 80 443
 
 WORKDIR /app
 
+VOLUME /var/lib/acme
+
 CMD ["./run.sh"]
