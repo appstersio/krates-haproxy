@@ -7,7 +7,7 @@ module Kontena
 
     ##
     # @param [String] config_file
-    def initialize(haproxy_bin = '/usr/sbin/haproxy', config_file = '/etc/haproxy/haproxy.cfg')
+    def initialize(haproxy_bin = '/usr/local/sbin/haproxy', config_file = '/usr/local/etc/haproxy/haproxy.cfg')
       @current_pid = nil
       @haproxy_cmd = [haproxy_bin, '-f', config_file, '-db', '-d']
       subscribe 'haproxy:config_updated', :update_haproxy
@@ -23,16 +23,14 @@ module Kontena
     end
 
     def start_haproxy
-      info 'Starting HAProxy process'
+      info "Starting HAProxy process ~> '#{@haproxy_cmd.join(' ')}'"
       @current_pid = Process.spawn(@haproxy_cmd.join(' '))
     end
 
     def reload_haproxy
-      info 'Reloading haproxy'
-      reload_cmd = @haproxy_cmd + ['-sf', @current_pid.to_s]
-      pid = Process.spawn(reload_cmd.join(' '))
-      Process.wait(@current_pid)
-      @current_pid = pid
+      info "Requesting graceful HAProxy configuration reload via SIGUSR2 (PID: #{@current_pid})"
+      Process.kill("USR2", @current_pid)
+      info "Graceful HAProxy configuration reload is done (PID: #{@current_pid})"
     end
 
     private

@@ -8,7 +8,7 @@ module Kontena
 
     ##
     # @param [String] config_file
-    def initialize(config_file = '/etc/haproxy/haproxy.cfg')
+    def initialize(config_file = '/usr/local/etc/haproxy/haproxy.cfg')
       self.config_file = config_file
       @old_config = ''
       subscribe 'haproxy:config_generated', :update_config

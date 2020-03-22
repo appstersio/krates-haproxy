@@ -59,7 +59,7 @@ describe Kontena::BackendResolver do
 
     it 'returns passed value if dns does not resolve' do
       ips = subject.resolve_dns('10.1.1.1')
-      expect(ips[0]).to eq('10.1.1.1')
+      expect(ips[0].to_s).to eq('10.1.1.1')
     end
   end
 end

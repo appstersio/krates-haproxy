@@ -20,10 +20,10 @@ le_email = ENV['LE_EMAIL']
 
 Celluloid.logger.level = (ENV['LOG_LEVEL'] || '1').to_i
 if le_email && le_domains.size > 0
-  acme_supervisor = Kontena::AcmeWorker.supervise(le_email, le_domains, debug)
+  acme_supervisor = Kontena::AcmeWorker.supervise(as: :acme_worker, args: [le_email, le_domains, debug])
 end
-spawner_supervisor = Kontena::HaproxySpawner.supervise
-config_generator_supervisor = Kontena::HaproxyConfigGenerator.supervise(
+spawner_supervisor = Kontena::HaproxySpawner.supervise as: :haproxy_spawner
+config_generator_supervisor = Kontena::HaproxyConfigGenerator.supervise(as: :config_generator, args: [
   frontend_port: frontend_port,
   maxconn: maxconn,
   mode: mode,
@@ -32,12 +32,12 @@ config_generator_supervisor = Kontena::HaproxyConfigGenerator.supervise(
   timeout: timeout,
   polling_interval: polling_interval,
   virtual_hosts: virtual_hosts
-)
-config_writer_supervisor = Kontena::HaproxyConfigWriter.supervise
-backend_resolver_supervisor = Kontena::BackendResolver.supervise(
+])
+config_writer_supervisor = Kontena::HaproxyConfigWriter.supervise as: :config_writer
+backend_resolver_supervisor = Kontena::BackendResolver.supervise(as: :resolver, args: [
   backends: backends,
   interval: polling_interval,
   autostart: true
-)
+])
 
 sleep
