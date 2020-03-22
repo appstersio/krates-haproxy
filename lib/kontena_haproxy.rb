@@ -1,6 +1,7 @@
 require 'celluloid'
 require 'celluloid/autostart'
 require 'celluloid/io'
+require 'fileutils'
 
 require_relative 'kontena/backend_resolver'
 require_relative 'kontena/haproxy_config_generator'
