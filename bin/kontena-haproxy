@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 
+debug = ENV['PRY_SESSION'] =='1'
+
 require_relative '../lib/kontena_haproxy'
+# Enable pry in case we're debugging
+require 'pry' if debug
 
 backends = ENV['BACKENDS'].to_s.split(',')
 frontend_port = ENV['FRONTEND_PORT'] || '80'
@@ -16,7 +20,7 @@ le_email = ENV['LE_EMAIL']
 
 Celluloid.logger.level = (ENV['LOG_LEVEL'] || '1').to_i
 if le_email && le_domains.size > 0
-  acme_supervisor = Kontena::AcmeWorker.supervise(le_email, le_domains)
+  acme_supervisor = Kontena::AcmeWorker.supervise(le_email, le_domains, debug)
 end
 spawner_supervisor = Kontena::HaproxySpawner.supervise
 config_generator_supervisor = Kontena::HaproxyConfigGenerator.supervise(
