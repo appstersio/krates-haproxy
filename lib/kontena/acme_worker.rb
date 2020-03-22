@@ -9,6 +9,7 @@ module Kontena
     ACME_CMD = "lego"
     ACME_CERT_DIR = "/var/lib/acme/"
     ACME_LOGS_DIR = ACME_CERT_DIR + "logs"
+    ACME_LOG_FILE = "#{ACME_LOGS_DIR}/console.log".freeze
 
     # @param [String] email
     # @param [Array<String>] domains
@@ -34,7 +35,7 @@ module Kontena
         publish 'haproxy:config_updated'
         loop do
           sleep (60*60*24*7) unless debug # week
-          sleep (60*3) if debug # 3 minutes
+          sleep (60*2) if debug # 2 minutes
           domains.each{|d|
             reconcile_domain(d)
             copy_domain_cert(d)
@@ -50,9 +51,9 @@ module Kontena
       retries = 0
       begin
         # lego -a -m <email> -d <domain> --http --http.port 127.0.0.1:402 --path <state> run
-        success = system("#{ACME_CMD} -a -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem run >> #{ACME_LOGS_DIR}/console.log")
+        success = system("#{ACME_CMD} -a -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem run >> #{ACME_LOG_FILE}")
         if success
-          info "fetched cert for domain #{domain}"
+          info "Fetched cert for domain #{domain}, expecting 'lego' to finish write operations by that time"
         else
           retries += 1
           raise "failed to fetch cert for domain #{domain}"
@@ -60,9 +61,9 @@ module Kontena
       rescue => exc
         info exc.message
         # In case of an exception, display acme logs as well
-        info File.read("#{ACME_LOGS_DIR}/console.log")
+        info File.read ACME_LOG_FILE
         wait = 10 * retries
-        info "retrying in #{wait} seconds"
+        info "Retrying certificate fetch for '#{domain}' in #{wait} seconds"
         sleep wait
         retry
       end
@@ -71,13 +72,14 @@ module Kontena
     # @param [String] domain
     def copy_domain_cert(domain)
       file_path = ACME_CERT_DIR + "certificates/#{domain}.pem"
+      # Each pem file at the destination must have timestamp suffix
       ssl_path = "/etc/ssl/private/#{domain}.pem"
       if File.exist?(file_path)
-        info "copying #{domain} certificate"
-        FileUtils.copy(file_path, ssl_path)
+        info "Copying #{domain} certificate to '#{ssl_path}'"
+        system("cp -fv #{file_path} #{ssl_path} >> #{ACME_LOG_FILE}")
       elsif File.exist?(ssl_path)
-        File.unlink(ssl_path)
-        info "removing certificate from #{domain}"
+        system("rm -fv #{ssl_path} >> #{ACME_LOG_FILE}")
+        info "Removing certificate from #{domain} at '#{ssl_path}'"
       end
     end
 
@@ -86,19 +88,19 @@ module Kontena
       retries = 0
       begin
         # lego -m <email> -d <domain> --http --path /var/lib/acme --pem renew
-        success = system("#{ACME_CMD} -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem renew #{'--days 999' if debug} >> #{ACME_LOGS_DIR}/console.log")
+        success = system("#{ACME_CMD} -m #{email} -d #{domain} --http --http.port 127.0.0.1:402 --path #{ACME_CERT_DIR} --pem renew #{'--days 999' if debug} >> #{ACME_LOG_FILE}")
         if success
-          info "renewed cert for domain #{domain}"
+          info "Renewed cert for domain #{domain}, expecting 'lego' to finish write operations by that time"
         else
           retries += 1
-          raise "failed to renew cert for domain #{domain}"
+          raise "Failed to renew cert for domain #{domain}"
         end
       rescue => exc
         info exc.message
         # In case of an exception, display acme logs as well
-        info File.read("#{ACME_LOGS_DIR}/console.log")
+        info File.read ACME_LOG_FILE
         wait = 10 * retries
-        info "retrying in #{wait} seconds"
+        info "Retrying certificate renewal for '#{domain}' in #{wait} seconds"
         sleep wait
         retry
       end
