@@ -20,7 +20,7 @@ module Kontena
         "pidfile /var/run/haproxy.pid",
         "user haproxy",
         "group haproxy",
-        "daemon",
+        "master-worker",
         "stats socket /var/run/haproxy.stats level admin",
         "tune.ssl.default-dh-param 2048"
       ]
@@ -53,7 +53,7 @@ module Kontena
       frontend << 'bind 0.0.0.0:%s' % options[:frontend_port]
       if has_certs?
         frontend << 'bind 0.0.0.0:443 ssl crt /etc/ssl/private/'
-        frontend << 'reqadd X-Forwarded-Proto:\ https'
+        frontend << 'http-request add-header X-Forwarded-Proto https'
         frontend << 'redirect scheme https code 301 if !{ ssl_fc } !{ url_beg /.well-known/acme-challenge/ }'
       end
 
