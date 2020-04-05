@@ -1,4 +1,4 @@
-FROM haproxy:2.1.3
+FROM haproxy:1.9
 LABEL maintainer="Pavel Tsurbeleu <krates@appsters.io>"
 
 ENV BACKENDS=kontena-server-api:9292 LEGO_VERSION=3.5.0 \
