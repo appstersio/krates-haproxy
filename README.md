@@ -1,6 +1,6 @@
 # Krates HAProxy
 
-[![Build Status](https://travis-ci.org/appstersio/krates-haproxy.svg?branch=master)](https://travis-ci.org/appstersio/krates-haproxy)
+[![Build Status](https://travis-ci.org/appstersio/krates-haproxy.svg?branch=master)](https://travis-ci.org/appstersio/krates-haproxy) [![Docker Image](https://images.microbadger.com/badges/version/krates/haproxy.svg)](https://microbadger.com/images/krates/haproxy)
 
 HAProxy image that does load-balancing between configured addresses. HAProxy reconfigures itself automatically when backend dns address change.
 
